@@ -3,8 +3,8 @@ def biglong(n, bytecount=4):
     return [(n&(0xff<<(8*i)))>>(8*i) for i in range(bytecount)]
 
 class DC6FileHeader:
-    def __init__(self, directions, frames):
-        self.terminator = 0xEE
+    def __init__(self, directions, frames, terminator=0xCD):
+        self.terminator = terminator # 0xEE is also valid
         self.version    = 6
         self.unknown01  = 1
         self.unknown02  = 0
@@ -29,7 +29,7 @@ class DC6FrameHeader:
         self.offsety    = offsety
         self.flip       = flip
         self.length     = length
-        self.nextblock  = 0
+        self.nextblock  = 0 # gets updated later
     
     def getbytes(self):
         b = bytearray()
@@ -56,7 +56,7 @@ class DC6FrameData:
     
     def _encode(self, data):
         w = self.width
-        rows = [data[n:n+w+1] for n in range(len(data))[::w]]
+        rows = [data[n:n+w] for n in range(len(data))[::w]]
         
         if self.flip<1:
             rows = rows[::-1]
@@ -70,10 +70,10 @@ class DC6FrameData:
         encoded = bytearray()
         groups = self._group_bytes_by_alpha(data, alpha_index)
         
-        for group in groups:
+        for group_index,group in enumerate(groups):
             group_bytes = bytearray()
             if alpha_index in group:
-                if group != groups[-1]:
+                if group_index != len(groups)-1:
                     group_bytes.extend([0x80|len(group)])
             else:
                 group_bytes.extend([0x7F&len(group)])
@@ -102,9 +102,10 @@ class DC6FrameData:
         return groups
 
 class DC6Frame:
-    def __init__(self, width, height, data, alpha_index=0):
+    def __init__(self, width, height, data, alpha_index=0, terminator=0xCD):
         self.header = DC6FrameHeader(width, height)
         self.framedata = DC6FrameData(width, height, data, flip=self.header.flip)
+        self.terminator = terminator
     
     def getbytes(self):
         b = bytearray()
@@ -112,6 +113,7 @@ class DC6Frame:
         self.header.length = len(data)
         b.extend(self.header.getbytes())
         b.extend(data)
+        b.extend([self.terminator]*3)
         return b
     
 
@@ -120,6 +122,7 @@ class DC6FileEncoder:
     def __init__(self, num_directions, num_frames, width, height, framedatas, alpha_index=0):
         self.header = DC6FileHeader(num_directions, num_frames)
         self.frames = [DC6Frame(width, height, data) for data in framedatas]
+        self.updatepointers()
     
     def fileinfo(self):
         print('Version: %d' % self.header.version)
@@ -130,24 +133,26 @@ class DC6FileEncoder:
         print('Number of frames: %d' % (self.header.directions * self.header.frames) )
         print('Animated: %s' % ['False', 'True'][self.header.frames>1])
     
-    def getpointers(self):
-        b = bytearray()
+    def updatepointers(self):
+        # updates nextblock field in frame headers
+        self.pointers = bytearray()
         numpointers = self.header.directions * self.header.frames
         start = len(self.header.getbytes()) + (numpointers*4) # each pointer is 32-bit
         offset = start
-        b.extend(biglong(offset))
-        for frame in self.frames[:-1]: # dont need the last one
+        self.pointers.extend(biglong(offset))
+        for frame in self.frames: # dont need the last one
             framelength = len(frame.getbytes())
             offset += framelength
-            b.extend(biglong(offset))
-        return b
+            frame.header.nextblock = offset # frame header converts to biglong
+            if frame != self.frames[-1]:
+                self.pointers.extend(biglong(offset))
     
     def getbytes(self):
         b = bytearray()
+        self.updatepointers()
         b.extend(self.header.getbytes())
-        b.extend(self.getpointers())
+        b.extend(self.pointers)
         for frame in self.frames:
             b.extend(frame.getbytes())
-            b.extend([self.header.terminator]*3)
         return b
 
