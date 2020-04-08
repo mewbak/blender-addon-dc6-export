@@ -22,27 +22,26 @@ def start(scene, frame_start, frame_end, src_dir, dst_dir, dst_name, dst_palette
         dst_name += '.dc6'
 
     folder = bpy.path.abspath(src_dir)
-    # first, organize filepaths into 2-dim array
-    # [ dir1[frame1, ..., frameN], ..., dirN[...] ]
-    ordered_filepaths = [[None]*frame_count for _ in range(directions_count)]
+    # for singledirection, filenames are like `0001.png`
+    # for single frame, filenames like `_0.png`
+    # for multi direction+frames, filename like `0001_0.png`
+    # we just need to get them and sort the array
+    ordered_filepaths = []
     for filename in os.listdir(folder):
-        file_path = os.path.join(folder, filename)
-        if os.path.isfile(file_path) or os.path.islink(file_path):
-            name = filename.split('.')[0]
-            parts = [int(part) for part in name.split('_')]
-            direction_index = int(parts[1])
-            frame_index = int(parts[0])
-            ordered_filepaths[direction_index][frame_index] = file_path
+        filepath = os.path.join(folder, filename)
+        if os.path.isfile(filepath) or os.path.islink(filepath):
+            if '.png' in filepath:
+                ordered_filepaths.append(filepath)
+    ordered_filepaths.sort()
     
     framedatas = []
-    for direction_paths in ordered_filepaths:
-        for frame_path in direction_paths:
-            # remap to target palette
-            img = Image.open(frame_path).convert('P')
-            img = remap_image_to_target_palette(img, dst_palette)
-            w = img.width
-            h = img.height
-            framedatas.append([b for b in img.getdata()])
+    for frame_path in ordered_filepaths:
+        # remap to target palette
+        img = Image.open(frame_path).convert('P')
+        img = remap_image_to_target_palette(img, dst_palette)
+        w = img.width
+        h = img.height
+        framedatas.append([b for b in img.getdata()])
     
     dc6file = DC6Encoder(directions_count, frame_count, w, h, framedatas)
 
