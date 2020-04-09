@@ -37,8 +37,11 @@ Do the following:
 * Go to `World` properties, set the background color to black (rgb 0,0,0)
 * In the `Render` properties, set the rendering engine to `Cycles` (you may not need to do this, but I did it...)
 
+# Examples
+Before running the examples, make sure to install the add-on first. You can skip the scene setup if you start with one of the example files.
+
 # CAVEATS
-The add-on is very experimental (buggy), so here are some shortcomings i'm awar of...
+The add-on is very experimental (buggy), so here are some shortcomings i'm aware of...
 
 * exporting a single frame hasn't been well tested and will likely fail
 * changing the camera rig properties will completely destroy the camera rig.
