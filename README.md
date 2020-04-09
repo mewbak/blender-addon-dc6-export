@@ -1,3 +1,7 @@
+![screenshot 1](/readme_images/potion_screenshot.png?raw=true)
+![screenshot 2](/readme_images/potions_screenshot.png?raw=true)
+![screenshot 3](/readme_images/potions_in_game.png?raw=true)
+
 # About
 A blender-2.80 plugin that manages a camera rig, as well as batch converting the rendered output to DC6 file format.
 
