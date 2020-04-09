@@ -144,7 +144,7 @@ class DC6FileEncoder:
             framelength = len(frame.getbytes())
             offset += framelength
             frame.header.nextblock = offset # frame header converts to biglong
-            if frame != self.frames[-1]:
+            if frame is not self.frames[-1]:
                 self.pointers.extend(biglong(offset))
     
     def getbytes(self):

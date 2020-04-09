@@ -34,6 +34,7 @@ def start(scene, frame_start, frame_end, src_dir, dst_dir, dst_name, dst_palette
                 ordered_filepaths.append(filepath)
     ordered_filepaths.sort()
     
+    print('Generating DC6 using the following:\n', '\n'.join(ordered_filepaths))
     framedatas = []
     for frame_path in ordered_filepaths:
         # remap to target palette
@@ -46,7 +47,10 @@ def start(scene, frame_start, frame_end, src_dir, dst_dir, dst_name, dst_palette
     dc6file = DC6Encoder(directions_count, frame_count, w, h, framedatas)
 
     dc6_path = os.path.join(bpy.path.abspath(dst_dir), dst_name)
-    
+
+    print('GENERATING DC6:', dc6_path)
+    dc6file.fileinfo()
+
     outfile = open(dc6_path, "wb")
     outfile.write(dc6file.getbytes())
     outfile.close()
